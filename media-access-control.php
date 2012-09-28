@@ -36,7 +36,7 @@
 /**
  * Make sure the class hasn't already been defined elsewhere.
  */
-if ( ! class_exists( 'Media Access_Control' ) ) :
+if ( ! class_exists( 'Media_Access_Control' ) ) :
 
 /**
  * Load the plugin.
