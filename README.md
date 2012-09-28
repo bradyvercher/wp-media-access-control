@@ -6,6 +6,8 @@ The plugin adds a field to the standard Media settings screen that allows users 
 
 Custom business rules will need to be applied by hooking into the `media_access_control_allow_file_access` filter.
 
+Additional filters are provided for disabling the settings interface and controlling the whitelist manually. This should work well as a "mu-plugin" to ensure it's executed before regular plugins and so it can't be disabled, or as an include.
+
 ## Credits ##
 
 Built by Brady Vercher ([@bradyvercher](http://twitter.com/bradyvercher))  

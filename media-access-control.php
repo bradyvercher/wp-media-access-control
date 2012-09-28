@@ -27,11 +27,16 @@
  * @author Brady Vercher <brady@blazersix.com>
  * @copyright Copyright (c) 2012, Blazer Six, Inc.
  * @license http://www.gnu.org/licenses/old-licenses/gpl-2.0.html
- * @since 0.1.0
  *
  * @todo Allow for additional paths to be registered.
+ * @todo Add support for Multisite.
+ * @todo Flush permalinks on deactivate.
  */
 
+/**
+ * Make sure the class hasn't already been defined elsewhere.
+ */
+if ( ! class_exists( 'Media Access_Control' ) ) :
 
 /**
  * Load the plugin.
@@ -42,6 +47,9 @@ add_action( 'plugins_loaded', array( 'Media_Access_Control', 'load' ) );
  * Main plugin class. Routes a specified list of file extensions that exist in
  * the upload directory through WordPress and provides a filter for hooking
  * into and implementing custom business rules for granting access.
+ *
+ * Consider using dropping this file in /wp-content/mu-plugins/ to prevent it
+ * from being disabled. It could also be used as an include.
  *
  * @since 0.1.0
  */
@@ -66,8 +74,12 @@ class Media_Access_Control {
 		
 		add_action( 'generate_rewrite_rules', array( __CLASS__, 'generate_rewrite_rules' ) );
 		
-		add_action( 'admin_init', array( __CLASS__, 'register_settings' ) );
-		add_action( 'update_option_media_access_control', array( __CLASS__, 'media_access_option_update' ), 10, 2 );
+		// Disable the UI; permalinks will need to be generated manually (visit the Permalinks page)
+		// You will also need to hook into the filter to whitelist the list of file extensions progammatically
+		if ( apply_filters( 'media_access_control_display_settings', true ) ) {
+			add_action( 'admin_init', array( __CLASS__, 'register_settings' ) );
+			add_action( 'update_option_media_access_control', array( __CLASS__, 'media_access_option_update' ), 10, 2 );
+		}
 	}
 	
 	/**
@@ -116,9 +128,9 @@ class Media_Access_Control {
 			
 			// Either return the path to the file to download, false, or redirect within the hook
 			// Could also send the file directly to send different headers
-			$file_path = apply_filters( 'media_access_control_allow_file_access', $file_path, $query_var, $attachment_id );
-			if ( $file_path && file_exists( $file_path ) ) {
-				self::send_file( $file_path );
+			$allow = apply_filters( 'media_access_control_allow_file_access', $file_path, $query_var, $attachment_id );
+			if ( $allow && file_exists( $allow ) ) {
+				self::send_file( $allow );
 			}
 			
 			// Return a 401 status code if the file actually exists, otherwise let WordPress serve a 404
@@ -160,14 +172,22 @@ class Media_Access_Control {
 	 */
 	public static function generate_rewrite_rules( $wp_rewrite ) {
 		$options = get_option( 'media_access_control' );
-		$file_extensions = ( isset( $options['extensions'] ) ) ? $options['extensions'] : '';
-		$file_extensions = str_replace( ' ', '|', preg_quote( $file_extensions, '/' ) );
 		
-		if ( ! empty( $file_extensions ) ) {
+		$file_exts = ( isset( $options['extensions'] ) ) ? explode( ' ', $options['extensions'] ) : array();
+		$file_exts = apply_filters( 'media_access_control_extensions_whitelist', $file_exts );
+		$file_exts = array_filter( $file_exts ); // Remove empty elements
+		
+		if ( ! empty( $file_exts ) ) {
+			// Escape regex characters
+			foreach( $file_exts as $key => $ext ) {
+				$file_exts[ $key ] = preg_quote( $ext, '/' );
+			}
+			$file_exts = join( '|', $file_exts );
+			
 			$upload_dir = wp_upload_dir();
 			$relative_upload_path = str_replace( site_url( '/' ), '', trailingslashit( $upload_dir['baseurl'] ) );
 			
-			$wp_rewrite->add_external_rule( $relative_upload_path . '(.*\.(' . $file_extensions . '))$', 'index.php?media_access_control_file=$1' );
+			$wp_rewrite->add_external_rule( $relative_upload_path . '(.*\.(' . $file_exts . '))$', 'index.php?media_access_control_file=$1' );
 		}
 	}
 	
@@ -254,5 +274,7 @@ class Media_Access_Control {
 		<br><span class="description"><?php _e( 'Space-separated list of file extensions that should be filtered for access.', 'media-access-control' ); ?></span>
 		<?php
 	}
-}
+} // Media_Access_Control end.
+
+endif;
 ?>

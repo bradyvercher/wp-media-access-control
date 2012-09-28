@@ -15,6 +15,8 @@ Media Access Control is meant to be extended by other plugins or developers in o
 
 The plugin adds a field to the standard Media settings screen that allows users to define a list of file extensions that should have custom access rules applied to them. Then when a visitor makes a request to a matching file, the file is passed through a filter that allows plugins to determine whether or not the visitor should be granted access.
 
+Additional filters are provided for disabling the settings interface and controlling the whitelist manually. This should work well as a "mu-plugin" to ensure it's executed before regular plugins and so it can't be disabled, or as an include.
+
 == Installation ==
 
 Installing Media Access Control is just like installing most other plugins. [Check out the codex](http://codex.wordpress.org/Managing_Plugins#Installing_Plugins) if you have any questions.
